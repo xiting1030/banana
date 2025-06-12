@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三年级下句子连连看小游戏</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            danger: '#EF4444',
+            neutral: '#F3F4F6',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .word-card {
+        @apply bg-white rounded-lg shadow-md p-3 cursor-move transition-all duration-200 hover:shadow-lg active:scale-95;
+      }
+      .drop-zone {
+        @apply border-2 border-dashed rounded-lg p-3 transition-all duration-200;
+      }
+      .drop-zone-active {
+        @apply border-primary bg-primary/10;
+      }
+      .correct {
+        @apply bg-secondary/20 border-secondary;
+      }
+      .incorrect {
+        @apply bg-danger/20 border-danger;
+      }
+      .time-bonus {
+        @apply text-secondary font-bold animate-pulse;
+      }
+      .correct-sentence {
+        @apply bg-neutral rounded-lg p-4 mt-4 text-center;
+      }
+      .auto-advance {
+        @apply opacity-75 animate-pulse;
+      }
+      /* 添加新的动画类 */
+      .celebration {
+        @apply animate-[pulse_0.5s_ease-in-out_2];
+      }
+      .confetti {
+        background-image: url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.5 0L0 1.5 3.5 5 0 8.5 1.5 10 5 6.5 8.5 10 10 8.5 6.5 5 10 1.5 8.5 0 5 3.5 1.5 0z' fill='%233B82F6' fill-opacity='0.5' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-size: 10px 10px;
+        animation: confetti-fall 3s linear forwards;
+      }
+      @keyframes confetti-fall {
+        0% {
+          background-position: 0 -10px;
+        }
+        100% {
+          background-position: 0 100vh;
+        }
+      }
+      /* 新增点击选中样式 */
+      .word-selected {
+        @apply bg-primary/20 border-primary border-2 scale-105 z-10;
+      }
+      .drop-zone-highlight {
+        @apply border-primary/50 bg-primary/5;
+      }
+      /* 新增调整模式样式 */
+      .adjust-mode {
+        @apply bg-yellow-50 border-yellow-300;
+      }
+      /* 新增调整提示样式 */
+      .adjust-hint {
+        @apply text-yellow-600 text-sm mt-1;
+      }
+      /* 新增过渡动画 */
+      .word-transition {
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+      }
+      /* 新增动画效果 */
+      .bounce-in {
+        animation: bounce-in 0.3s ease-out;
+      }
+      @keyframes bounce-in {
+        0% { transform: scale(0.9); opacity: 0.8; }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      /* 新增旋转效果 */
+      .rotate-once {
+        animation: rotate-once 0.5s ease-out;
+      }
+      @keyframes rotate-once {
+        0% { transform: rotate(-5deg); }
+        50% { transform: rotate(5deg); }
+        100% { transform: rotate(0deg); }
+      }
+      /* 新增脉冲效果 */
+      .pulse-light {
+        animation: pulse-light 1.5s infinite;
+      }
+      @keyframes pulse-light {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+        70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      }
+      /* 新增高亮闪烁效果 */
+      .flash {
+        animation: flash 0.3s ease-out;
+      }
+      @keyframes flash {
+        0% { background-color: rgba(59, 130, 246, 0.2); }
+        50% { background-color: rgba(59, 130, 246, 0.4); }
+        100% { background-color: rgba(59, 130, 246, 0); }
+      }
+      /* 新增移动动画 */
+      .slide {
+        animation: slide 0.3s ease-out;
+      }
+      @keyframes slide {
+        0% { transform: translateX(-10px); opacity: 0.8; }
+        100% { transform: translateX(0); opacity: 1; }
+      }
+      /* 新增时间奖励提示样式 */
+      .time-reward {
+        @apply text-xl font-bold text-secondary animate-pulse;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- 游戏标题 -->
+    <header class="text-center mb-8">
+      <h1 class="text-[clamp(1.75rem,5vw,2.5rem)] font-bold text-gray-800 mb-2">三年级下句子连连看小游戏</h1>
+      <p class="text-gray-600">将打乱的单词重新排列成一个完整的句子</p>
+    </header>
+    
+    <!-- 游戏区域 -->
+    <main class="bg-white rounded-xl shadow-xl p-6 mb-8">
+      <!-- 游戏状态 -->
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <span class="text-sm font-medium text-gray-500">关卡:</span>
+          <span id="level" class="ml-2 text-lg font-bold text-primary">1</span>
+        </div>
+        <div>
+          <span class="text-sm font-medium text-gray-500">得分:</span>
+          <span id="score" class="ml-2 text-lg font-bold text-primary">0</span>
+        </div>
+        <div>
+          <span class="text-sm font-medium text-gray-500">时间:</span>
+          <span id="timer" class="ml-2 text-lg font-bold text-primary">60</span>
+        </div>
+        <!-- 音效控制 -->
+        <div>
+          <button id="sound-toggle" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">
+            <i class="fa fa-volume-up mr-1"></i>音效开
+          </button>
+        </div>
+      </div>
+      
+      <!-- 提示区域 -->
+      <div class="mb-6 p-4 bg-neutral rounded-lg">
+        <p id="sentence-hint" class="text-gray-700">请将下面的单词重新排列成一个完整的句子</p>
+      </div>
+      
+      <!-- 单词卡片区域 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">打乱的单词</h3>
+        <div id="word-bank" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <!-- 单词卡片将通过JS动态生成 -->
+        </div>
+      </div>
+      
+      <!-- 句子构建区域 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">构建句子</h3>
+        <div id="sentence-zone" class="flex flex-wrap gap-3 min-h-[100px] drop-zone">
+          <!-- 拖放区域将通过JS动态生成 -->
+        </div>
+        <!-- 新增调整提示 -->
+        <p class="adjust-hint">点击单词可以在句子中调整位置，或拖回左侧单词库</p>
+      </div>
+      
+      <!-- 控制按钮 -->
+      <div class="flex justify-between">
+        <button id="reset-btn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors">
+          <i class="fa fa-refresh mr-2"></i>重置
+        </button>
+        <!-- 添加检查答案按钮 -->
+        <button id="check-btn" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors pulse-light">
+          <i class="fa fa-check mr-2"></i>检查答案
+        </button>
+      </div>
+    </main>
+    
+    <!-- 结果区域 -->
+    <div id="result-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-300">
+        <div id="result-icon" class="text-5xl text-center mb-4">
+          <!-- 图标将通过JS动态设置 -->
+        </div>
+        <h2 id="result-title" class="text-2xl font-bold text-center mb-2">结果</h2>
+        <p id="result-message" class="text-center text-gray-600 mb-4">你的答案是...</p>
+        
+        <!-- 正确句子显示区域 -->
+        <div id="correct-sentence-container" class="mb-4">
+          <p class="text-center text-gray-700 mb-2 font-medium">正确的句子是：</p>
+          <p id="correct-sentence" class="correct-sentence text-lg"></p>
+        </div>
+        
+        <!-- 时间奖励显示区域 -->
+        <div id="time-reward-container" class="hidden text-center mt-4">
+          <p class="text-gray-700 mb-2 font-medium">时间奖励：</p>
+          <p id="time-reward" class="time-reward"></p>
+        </div>
+        
+        <!-- 自动进入下一关提示 -->
+        <div id="auto-advance-message" class="hidden text-center text-gray-600 mt-4">
+          <p class="text-sm">将在 <span id="countdown" class="font-bold">3</span> 秒后自动进入下一关</p>
+        </div>
+        
+        <!-- 按钮区域 -->
+        <div id="result-buttons" class="flex justify-center mt-6">
+          <button id="continue-btn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors hidden">
+            再试一次
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 游戏结束区域 -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-300">
+        <div class="text-5xl text-center mb-4 text-danger">
+          <i class="fa fa-times-circle"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-center mb-2">游戏结束</h2>
+        <p class="text-center text-gray-600 mb-4">时间到！</p>
+        <p class="text-center text-xl font-bold mb-6">最终得分: <span id="final-score">0</span></p>
+        <div class="flex justify-center">
+          <button id="restart-btn" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors">
+            重新开始
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 通关区域 -->
+    <div id="game-complete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl transform transition-all duration-300">
+        <div class="text-5xl text-center mb-4 text-secondary">
+          <i class="fa fa-trophy"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-center mb-2">恭喜通关！</h2>
+        <p class="text-center text-gray-600 mb-4">You've completed all 30 levels!</p>
+        <p class="text-center text-xl font-bold mb-6">最终得分: <span id="final-score-complete">0</span></p>
+        <div class="flex justify-center">
+          <button id="restart-btn-complete" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors">
+            Restart Game
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 句子库
+    const sentences = [
+      {
+        text: "What are they?",
+        words: ["What", "are", "they?"]
+      },
+      {
+        text: "They are elephants.",
+        words: ["They", "are", "elephants."]
+      },
+      {
+        text: "Look at my picture!",
+        words: ["Look", "at", "my", "picture!"]
+      },
+      {
+        text: "Are they tigers?",
+        words: ["Are", "they", "tigers?"]
+      },
+      {
+        text: "Tippi and her animal friends are very cute.",
+        words: ["Tippi", "and", "her", "animal", "friends", "are", "very", "cute."]
+      },
+      {
+        text: "Let's go to the zoo and find animals.",
+        words: ["Let's", "go", "to", "the", "zoo", "and", "find", "animals."]
+      },
+      {
+        text: "Nezha has got three heads.",
+        words: ["Nezha", "has", "got", "three", "heads."]
+      },
+      {
+        text: "He has got a red mouth.",
+        words: ["He", "has", "got", "a", "red", "mouth."]
+      },
+      {
+        text: "You've got two eyes.",
+        words: ["You've", "got", "two", "eyes."]
+      },
+      {
+        text: "We help you see.",
+        words: ["We", "help", "you", "see."]
+      },
+      {
+        text: "Draw a snowman and tell the class about it.",
+        words: ["Draw", "a", "snowman", "and", "tell", "the", "class", "about", "it."]
+      },
+      {
+        text: "I like tomatoes and oranges.",
+        words: ["I", "like", "tomatoes", "and", "oranges."]
+      },
+      {
+        text: "Do you like the rainbow salad?",
+        words: ["Do", "you", "like", "the", "rainbow", "salad?"]
+      },
+      {
+        text: "Let's make a salad together!",
+        words: ["Let's", "make", "a", "salad", "together!"]
+      },
+      {
+        text: "We've got eggs and tomatoes for breakfast.",
+        words: ["We've", "got", "eggs", "and", "tomatoes", "for", "breakfast."]
+      },
+      {
+        text: "What do you like doing in your free time?",
+        words: ["What", "do", "you", "like", "doing", "in", "your", "free", "time?"]
+      },
+      {
+        text: "Daming likes taking photos.",
+        words: ["Daming", "likes", "taking", "photos."]
+      },
+      {
+        text: "He likes watching insects.",
+        words: ["He", "likes", "watching", "insects."]
+      },
+      {
+        text: "What is Fabre's hobby?",
+        words: ["What", "is", "Fabre's", "hobby?"]
+      },
+      {
+        text: "He likes asking questions.",
+        words: ["He", "likes", "asking", "questions."]
+      },
+      {
+        text: "It's half past six.",
+        words: ["It's", "half", "past", "six."]
+      },
+      {
+        text: "It's time to get up.",
+        words: ["It's", "time", "to", "get", "up."]
+      },
+      {
+        text: "What time is it?",
+        words: ["What", "time", "is", "it?"]
+      },
+      {
+        text: "It's time for breakfast.",
+        words: ["It's", "time", "for", "breakfast."]
+      },
+      {
+        text: "When does Yuanyuan's mum go to work?",
+        words: ["When", "does", "Yuanyuan's", "mum", "go", "to", "work?"]
+      },
+      {
+        text: "I have classes at half past eight in the morning.",
+        words: ["I", "have", "classes", "at", "half", "past", "eight", "in", "the", "morning."]
+      },
+      {
+        text: "We have art on Friday.",
+        words: ["We", "have", "art", "on", "Friday."]
+      },
+      {
+        text: "What subject do you love?",
+        words: ["What", "subject", "do", "you", "love?"]
+      },
+      {
+        text: "Let's visit our old friends.",
+        words: ["Let's", "visit", "our", "old", "friends."]
+      },
+      {
+        text: "On Wednesday, I go to a painting club.",
+        words: ["On", "Wednesday,", "I", "go", "to", "a", "painting", "club."]
+      }
+    ];
+    
+    // 英文鼓励语库
+    const encouragementMessages = [
+      "Great job!",
+      "Excellent!",
+      "Perfect!",
+      "You're amazing!",
+      "Fantastic!",
+      "Superb!",
+      "Well done!",
+      "Brilliant!",
+      "You're a star!",
+      "Incredible!",
+      "Marvelous!",
+      "Outstanding!",
+      "You're awesome!",
+      "Genius!",
+      "Impressive!",
+      "Way to go!",
+      "You're on fire!",
+      "You rock!",
+      "You're the best!",
+      "You're a genius!",
+      "You're incredible!",
+      "You're fantastic!",
+      "You're amazing!",
+      "You're outstanding!",
+      "You're spectacular!",
+      "You're remarkable!",
+      "You're exceptional!",
+      "You're extraordinary!",
+      "You're phenomenal!",
+      "You're sensational!",
+      "You're stupendous!",
+      "You're tremendous!",
+      "You're wonderful!",
+      "You're incredible!",
+      "You're amazing!",
+      "You're outstanding!",
+      "You're spectacular!",
+      "You're remarkable!",
+      "You're exceptional!",
+      "You're extraordinary!",
+      "You're phenomenal!",
+      "You're sensational!",
+      "You're stupendous!",
+      "You're tremendous!",
+      "You're wonderful!"
+    ];
+    
+    // 游戏状态
+    let currentLevel = 1;
+    let score = 0;
+    let timeLeft = 60;
+    let timerInterval;
+    let currentSentenceIndex = 0;
+    let draggedWord = null;
+    let isPaused = false; // 游戏暂停状态变量
+    let autoCheckDelay; // 自动检查延迟定时器
+    let autoAdvanceInterval; // 自动进入下一关倒计时定时器
+    let countdownValue = 3; // 倒计时初始值
+    let soundEnabled = true; // 音效开关状态
+    let audioContextInitialized = false; // 音频上下文初始化状态
+    let selectedWord = null; // 当前选中的单词
+    let touchStartTime = 0; // 用于区分点击和长按
+    let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0; // 检测触摸设备
+    let isAdjusting = false; // 是否处于调整模式
+    let dropZoneHighlighted = null; // 当前高亮的放置区域
+    
+    // DOM 元素
+    const wordBank = document.getElementById('word-bank');
+    const sentenceZone = document.getElementById('sentence-zone');
+    const resetBtn = document.getElementById('reset-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const continueBtn = document.getElementById('continue-btn');
+    const resultModal = document.getElementById('result-modal');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const gameCompleteModal = document.getElementById('game-complete-modal'); // 新增通关模态框
+    const levelElement = document.getElementById('level');
+    const scoreElement = document.getElementById('score');
+    const timerElement = document.getElementById('timer');
+    const sentenceHintElement = document.getElementById('sentence-hint');
+    const resultIconElement = document.getElementById('result-icon');
+    const resultTitleElement = document.getElementById('result-title');
+    const resultMessageElement = document.getElementById('result-message');
+    const finalScoreElement = document.getElementById('final-score');
+    const finalScoreCompleteElement = document.getElementById('final-score-complete'); // 新增通关分数显示
+    const correctSentenceContainer = document.getElementById('correct-sentence-container');
+    const correctSentenceElement = document.getElementById('correct-sentence');
+    const autoAdvanceMessage = document.getElementById('auto-advance-message');
+    const countdownElement = document.getElementById('countdown');
+    const resultButtons = document.getElementById('result-buttons');
+    const soundToggleBtn = document.getElementById('sound-toggle');
+    const timeRewardContainer = document.getElementById('time-reward-container');
+    const timeRewardElement = document.getElementById('time-reward');
+    
+    // 修复：正确获取通关界面的重新开始按钮
+    const restartBtnComplete = document.getElementById('restart-btn-complete');
+    
+    // 新增检查答案按钮
+    const checkBtn = document.getElementById('check-btn');
+    
+    // 音频上下文 - 用于管理音频播放
+    let audioContext;
+    
+    // 音效元素
+    const dragSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-plastic-click-1109.mp3');
+    const dropSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3');
+    const correctSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3');
+    const wrongSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-negative-game-notification-239.mp3');
+    const gameOverSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-sad-game-over-trombone-471.mp3');
+    const levelUpSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3');
+    const gameCompleteSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-fanfare-2025.mp3'); // 新增通关音效
+    
+    // 新增金属撞击音效 - 清脆的金属声
+    const metalHitSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-metallic-drum-hit-1002.mp3');
+    const adjustSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'); // 新增调整音效
+    const timeRewardSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-power-up-game-notification-277.mp3'); // 新增时间奖励音效
+    
+    // 新增齿轮转动音效
+    const gearTurnSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-mechanical-gear-turn-1093.mp3');
+    const gearClickSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-clock-mechanism-tick-tock-1090.mp3');
+    
+    // 新增单词点击音效
+    const clickSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-game-coin-216.mp3');
+    
+    // 设置音效音量
+    [dragSound, dropSound, correctSound, wrongSound, gameOverSound, levelUpSound, metalHitSound, adjustSound, timeRewardSound, gameCompleteSound, gearTurnSound, gearClickSound, clickSound].forEach(sound => {
+      sound.volume = 0.9;
+    });
+    
+    // 修改toggleSound函数
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      soundToggleBtn.innerHTML = soundEnabled ? 
+        '<i class="fa fa-volume-up mr-1"></i>音效开' : 
+        '<i class="fa fa-volume-off mr-1"></i>音效关';
+      
+      // 确保切换音效时音频上下文已初始化
+      if (soundEnabled && !audioContextInitialized) {
+        initAudioContext();
+      }
+    }
+    
+    // 修改playSound函数
+    function playSound(sound) {
+      if (soundEnabled) {
+        // 确保音频上下文已初始化
+        if (!audioContextInitialized) {
+          initAudioContext();
+        }
+        
+        // 尝试恢复音频上下文状态
+        if (audioContext && audioContext.state === 'suspended') {
+          audioContext.resume()
+            .then(() => {
+              // 重置音频并播放
+              sound.currentTime = 0;
+              sound.play().catch(e => {
+                console.log("无法播放音效:", e);
+              });
+            })
+            .catch(e => {
+              console.log("无法恢复音频上下文:", e);
+            });
+        } else {
+          // 直接播放音效
+          sound.currentTime = 0;
+          sound.play().catch(e => {
+            console.log("无法播放音效:", e);
+          });
+        }
+      }
+    }
+    
+    // 初始化音频上下文
+    function initAudioContext() {
+      if (!audioContext && !audioContextInitialized) {
+        try {
+          // 创建音频上下文
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          audioContextInitialized = true;
+          console.log("音频上下文初始化成功");
+          
+          // 尝试恢复上下文状态
+          resumeAudioContext();
+        } catch (e) {
+          console.log("无法创建音频上下文:", e);
+        }
+      }
+    }
+    
+    // 恢复音频上下文状态
+    function resumeAudioContext() {
+      if (audioContext && audioContext.state === 'suspended' && audioContextInitialized) {
+        audioContext.resume()
+          .then(() => {
+            console.log("音频上下文已恢复");
+          })
+          .catch(e => {
+            console.log("无法恢复音频上下文:", e);
+          });
+      }
+    }
+    
+    // 确保音频上下文在用户交互后初始化
+    function ensureAudioContext() {
+      if (!audioContextInitialized) {
+        initAudioContext();
+        
+        // 创建一个简单的声音来"解锁"音频上下文
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.01);
+      }
+    }
+    
+    // 修改handleWordClick函数
+    function handleWordClick(e, wordCard) {
+      // 阻止事件冒泡
+      e.stopPropagation();
+      
+      // 确保音频上下文已初始化
+      ensureAudioContext();
+      
+      // 播放清晰的金属撞击声 - 确保所有点击都有音效
+      playSound(clickSound);
+      
+      // 检查是否已经选中了一个单词（调整模式）
+      if (isAdjusting && selectedWord) {
+        // 如果点击的是已选中的单词，取消选择
+        if (selectedWord === wordCard) {
+          selectedWord.classList.remove('word-selected');
+          selectedWord = null;
+          isAdjusting = false;
+          playSound(wrongSound); // 使用错误音效表示取消选择
+          return;
+        }
+        
+        // 如果点击的是句子区域内的另一个单词，执行交换
+        if (sentenceZone.contains(wordCard)) {
+          // 获取两个单词在句子区域中的位置
+          const selectedIndex = Array.from(sentenceZone.children).indexOf(selectedWord);
+          const targetIndex = Array.from(sentenceZone.children).indexOf(wordCard);
+          
+          // 执行交换
+          if (selectedIndex !== -1 && targetIndex !== -1) {
+            // 添加交换动画效果
+            selectedWord.classList.add('rotate-once');
+            wordCard.classList.add('rotate-once');
+            
+            // 交换DOM元素 - 使用更可靠的交换方法
+            const temp = document.createElement('div');
+            sentenceZone.insertBefore(temp, selectedWord);
+            sentenceZone.insertBefore(selectedWord, wordCard);
+            sentenceZone.insertBefore(wordCard, temp);
+            sentenceZone.removeChild(temp);
+            
+            // 播放调整音效 - 新增
+            playSound(adjustSound);
+            
+            // 移除选中状态
+            selectedWord.classList.remove('word-selected');
+            selectedWord = null;
+            isAdjusting = false;
+            
+            // 检查句子是否正确
+            checkSentence();
+            
+            return;
+          }
+        }
+        
+        // 如果点击的是单词库中的单词，将选中的单词放回单词库
+        if (wordBank.contains(wordCard)) {
+          // 添加动画效果
+          selectedWord.classList.add('bounce-in');
+          
+          // 移动DOM元素
+          wordBank.appendChild(selectedWord);
+          
+          // 播放清晰的金属撞击声
+          playSound(metalHitSound);
+          
+          // 移除选中状态
+          selectedWord.classList.remove('word-selected');
+          selectedWord = null;
+          isAdjusting = false;
+          
+          // 检查句子是否正确
+          checkSentence();
+          
+          return;
+        }
+      }
+      
+      // 如果是点击句子区域内的单词，进入调整模式
+      if (sentenceZone.contains(wordCard)) {
+        // 如果已有选中的单词，先取消选中
+        if (selectedWord) {
+          selectedWord.classList.remove('word-selected');
+        }
+        
+        // 设置新的选中单词
+        selectedWord = wordCard;
+        selectedWord.classList.add('word-selected');
+        isAdjusting = true;
+        
+        // 播放调整音效 - 新增
+        playSound(adjustSound);
+        
+        return;
+      }
+      
+      // 如果是点击单词库中的单词，移动到句子区域
+      if (wordBank.contains(wordCard)) {
+        // 添加动画效果
+        wordCard.classList.add('slide');
+        
+        // 移动DOM元素
+        sentenceZone.appendChild(wordCard);
+        
+        // 播放清晰的金属放置声 - 保留原有的放置音效
+        playSound(dropSound);
+        
+        // 检查句子是否正确
+        checkSentence();
+      }
+    }
+    
+    // 处理拖放开始
+    function handleDragStart(e) {
+      draggedWord = this;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', this.outerHTML);
+      this.classList.add('opacity-50');
+      
+      // 播放拖动音效
+      playSound(dragSound);
+    }
+    
+    // 处理拖放结束
+    function handleDragEnd() {
+      draggedWord.classList.remove('opacity-50');
+      draggedWord = null;
+      
+      // 重置所有放置区域的样式
+      document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.classList.remove('drop-zone-active');
+      });
+    }
+    
+    // 处理拖放经过
+    function handleDragOver(e) {
+      if (e.preventDefault) {
+        e.preventDefault();
+      }
+      
+      this.classList.add('drop-zone-active');
+      e.dataTransfer.dropEffect = 'move';
+      
+      return false;
+    }
+    
+    // 处理拖放进入
+    function handleDragEnter(e) {
+      this.classList.add('drop-zone-active');
+    }
+    
+    // 处理拖放离开
+    function handleDragLeave() {
+      this.classList.remove('drop-zone-active');
+    }
+    
+    // 处理拖放
+    function handleDrop(e) {
+      e.stopPropagation();
+      
+      if (draggedWord) {
+        // 获取目标元素
+        const target = e.target;
+        let dropTarget = target;
+        
+        // 如果目标是单词卡片，将其视为放置区域的子元素
+        if (target.classList.contains('word-card')) {
+          dropTarget = target.parentElement;
+        }
+        
+        // 检查放置目标是否是句子区域或单词库
+        if (dropTarget === sentenceZone || dropTarget === wordBank) {
+          // 移除之前的高亮效果
+          if (dropZoneHighlighted) {
+            dropZoneHighlighted.classList.remove('drop-zone-highlight');
+          }
+          
+          // 设置新的高亮效果
+          dropZoneHighlighted = dropTarget;
+          dropTarget.classList.add('drop-zone-highlight');
+          
+          // 移动单词卡片
+          dropTarget.appendChild(draggedWord);
+          
+          // 播放放置音效
+          playSound(dropSound);
+          
+          // 检查句子是否正确
+          checkSentence();
+        }
+      }
+      
+      return false;
+    }
+    
+    // 检查句子是否正确
+    function checkSentence() {
+      // 清除之前的延迟检查定时器
+      if (autoCheckDelay) {
+        clearTimeout(autoCheckDelay);
+      }
+      
+      // 设置延迟检查，避免频繁检查
+      autoCheckDelay = setTimeout(() => {
+        // 获取当前句子区域中的单词
+        const sentenceWords = Array.from(sentenceZone.children).map(wordCard => {
+          return wordCard.textContent.trim();
+        });
+        
+        // 获取当前关卡的正确单词顺序
+        const currentSentence = sentences[currentSentenceIndex];
+        const correctWords = currentSentence.words;
+        
+        // 检查单词数量是否一致
+        if (sentenceWords.length !== correctWords.length) {
+          return; // 单词数量不一致，不进行检查
+        }
+        
+        // 检查单词顺序是否正确
+        let isCorrect = true;
+        for (let i = 0; i < sentenceWords.length; i++) {
+          if (sentenceWords[i] !== correctWords[i]) {
+            isCorrect = false;
+            break;
+          }
+        }
+        
+        // 如果句子正确
+        if (isCorrect) {
+          // 暂停游戏计时器
+          clearInterval(timerInterval);
+          
+          // 计算得分
+          const timeBonus = Math.max(0, timeLeft); // 剩余时间作为奖励
+          const levelPoints = currentLevel * 10; // 关卡基础分
+          const totalPoints = levelPoints + timeBonus;
+          
+          // 更新总得分
+          score += totalPoints;
+          scoreElement.textContent = score;
+          
+          // 显示结果模态框
+          showResult(true, totalPoints, timeBonus);
+        }
+      }, 500); // 延迟500毫秒检查，避免频繁操作
+    }
+    
+    // 显示结果模态框
+    function showResult(isCorrect, points, timeBonus) {
+      // 暂停游戏
+      isPaused = true;
+      
+      // 播放相应音效
+      if (isCorrect) {
+        playSound(correctSound);
+      } else {
+        playSound(wrongSound);
+      }
+      
+      // 设置结果内容
+      if (isCorrect) {
+        // 随机选择一条鼓励语
+        const randomMessage = encouragementMessages[Math.floor(Math.random() * encouragementMessages.length)];
+        
+        resultIconElement.innerHTML = '<i class="fa fa-check-circle text-secondary"></i>';
+        resultTitleElement.textContent = "太棒了！";
+        resultMessageElement.textContent = randomMessage;
+        
+        // 显示正确句子
+        correctSentenceContainer.classList.remove('hidden');
+        correctSentenceElement.textContent = sentences[currentSentenceIndex].text;
+        
+        // 显示时间奖励
+        if (timeBonus > 0) {
+          timeRewardContainer.classList.remove('hidden');
+          timeRewardElement.textContent = `+${timeBonus} 时间奖励`;
+        } else {
+          timeRewardContainer.classList.add('hidden');
+        }
+        
+        // 显示自动进入下一关提示
+        autoAdvanceMessage.classList.remove('hidden');
+        
+        // 隐藏继续按钮
+        continueBtn.classList.add('hidden');
+        
+        // 添加庆祝动画效果
+        document.body.classList.add('confetti');
+        
+        // 播放关卡完成音效
+        playSound(levelUpSound);
+        
+        // 开始自动进入下一关倒计时
+        countdownValue = 3;
+        countdownElement.textContent = countdownValue;
+        autoAdvanceInterval = setInterval(() => {
+          countdownValue--;
+          countdownElement.textContent = countdownValue;
+          
+          if (countdownValue <= 0) {
+            clearInterval(autoAdvanceInterval);
+            nextLevel();
+          }
+        }, 1000);
+      } else {
+        resultIconElement.innerHTML = '<i class="fa fa-times-circle text-danger"></i>';
+        resultTitleElement.textContent = "再接再厉！";
+        resultMessageElement.textContent = "句子顺序不正确，请参考正确句子再试一次。";
+        
+        // 确保正确句子容器可见
+        correctSentenceContainer.classList.remove('hidden');
+        correctSentenceElement.textContent = sentences[currentSentenceIndex].text;
+        
+        // 隐藏时间奖励
+        timeRewardContainer.classList.add('hidden');
+        
+        // 隐藏自动进入下一关提示
+        autoAdvanceMessage.classList.add('hidden');
+        
+        // 显示继续按钮
+        continueBtn.classList.remove('hidden');
+      }
+      
+      // 显示结果模态框
+      resultModal.classList.remove('hidden');
+    }
+    
+    // 进入下一关
+    function nextLevel() {
+      // 清除倒计时
+      clearInterval(autoAdvanceInterval);
+      
+      // 隐藏结果模态框
+      resultModal.classList.add('hidden');
+      
+      // 移除庆祝效果
+      document.body.classList.remove('confetti');
+      
+      // 增加关卡
+      currentLevel++;
+      levelElement.textContent = currentLevel;
+      
+      // 重置时间
+      timeLeft = 60;
+      timerElement.textContent = timeLeft;
+      
+      // 增加句子索引
+      currentSentenceIndex++;
+      
+      // 检查是否所有关卡都已完成
+      if (currentSentenceIndex >= sentences.length) {
+        // 游戏通关
+        showGameComplete();
+        return;
+      }
+      
+      // 加载下一关
+      loadLevel();
+      
+      // 重新开始计时器
+      startTimer();
+      
+      // 重置调整模式
+      if (selectedWord) {
+        selectedWord.classList.remove('word-selected');
+        selectedWord = null;
+        isAdjusting = false;
+      }
+    }
+    
+    // 显示游戏通关
+    function showGameComplete() {
+      // 暂停游戏
+      isPaused = true;
+      
+      // 更新最终得分
+      finalScoreCompleteElement.textContent = score;
+      
+      // 播放通关音效
+      playSound(gameCompleteSound);
+      
+      // 显示通关模态框
+      gameCompleteModal.classList.remove('hidden');
+    }
+    
+    // 显示游戏结束
+    function showGameOver() {
+      // 暂停游戏
+      isPaused = true;
+      
+      // 更新最终得分
+      finalScoreElement.textContent = score;
+      
+      // 播放游戏结束音效
+      playSound(gameOverSound);
+      
+      // 显示游戏结束模态框
+      gameOverModal.classList.remove('hidden');
+    }
+    
+    // 初始化游戏
+    function initGame() {
+      // 重置游戏状态
+      currentLevel = 1;
+      score = 0;
+      timeLeft = 60;
+      currentSentenceIndex = 0;
+      
+      // 更新UI
+      levelElement.textContent = currentLevel;
+      scoreElement.textContent = score;
+      timerElement.textContent = timeLeft;
+      
+      // 加载第一关
+      loadLevel();
+      
+      // 开始计时器
+      startTimer();
+      
+      // 确保音频上下文已初始化
+      ensureAudioContext();
+      
+      // 隐藏所有模态框
+      resultModal.classList.add('hidden');
+      gameOverModal.classList.add('hidden');
+      gameCompleteModal.classList.add('hidden');
+      
+      // 重置调整模式
+      if (selectedWord) {
+        selectedWord.classList.remove('word-selected');
+        selectedWord = null;
+        isAdjusting = false;
+      }
+    }
+    
+    // 加载关卡
+    function loadLevel() {
+      // 清空单词库和句子区域
+      wordBank.innerHTML = '';
+      sentenceZone.innerHTML = '';
+      
+      // 获取当前关卡的句子
+      const currentSentence = sentences[currentSentenceIndex];
+      
+      // 创建打乱的单词数组
+      const shuffledWords = [...currentSentence.words];
+      
+      // 使用Fisher-Yates洗牌算法打乱单词顺序
+      for (let i = shuffledWords.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledWords[i], shuffledWords[j]] = [shuffledWords[j], shuffledWords[i]];
+      }
+      
+      // 创建单词卡片并添加到单词库
+      shuffledWords.forEach(word => {
+        const wordCard = document.createElement('div');
+        wordCard.className = 'word-card flex items-center justify-center text-center min-h-[60px] word-transition';
+        wordCard.draggable = true;
+        wordCard.textContent = word;
+        
+        // 添加动画效果
+        wordCard.classList.add('bounce-in');
+        
+        // 添加事件监听器
+        wordCard.addEventListener('dragstart', handleDragStart);
+        wordCard.addEventListener('dragend', handleDragEnd);
+        wordCard.addEventListener('click', (e) => handleWordClick(e, wordCard));
+        
+        // 添加到单词库
+        wordBank.appendChild(wordCard);
+      });
+      
+      // 设置句子提示
+      sentenceHintElement.textContent = `请将下面的单词重新排列成一个完整的句子: "${currentSentence.text.replace(/[a-zA-Z']+/g, '____')}"`;
+      
+      // 播放齿轮转动音效
+      playSound(gearTurnSound);
+    }
+    
+    // 开始计时器
+    function startTimer() {
+      // 清除之前的计时器
+      clearInterval(timerInterval);
+      
+      // 重置暂停状态
+      isPaused = false;
+      
+      // 开始新的计时器
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          timeLeft--;
+          timerElement.textContent = timeLeft;
+          
+          // 播放时钟滴答音效
+          playSound(gearClickSound);
+          
+          // 检查时间是否用完
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            showGameOver();
+          }
+        }
+      }, 1000);
+    }
+    
+    // 重置当前关卡
+    function resetLevel() {
+      // 清除自动检查延迟
+      if (autoCheckDelay) {
+        clearTimeout(autoCheckDelay);
+      }
+      
+      // 重置时间
+      timeLeft = 60;
+      timerElement.textContent = timeLeft;
+      
+      // 加载当前关卡
+      loadLevel();
+      
+      // 重新开始计时器
+      startTimer();
+      
+      // 播放重置音效
+      playSound(wrongSound);
+    }
+    
+    // 手动检查句子
+    function manuallyCheckSentence() {
+      // 清除之前的延迟检查定时器
+      if (autoCheckDelay) {
+        clearTimeout(autoCheckDelay);
+      }
+      
+      // 获取当前句子区域中的单词
+      const sentenceWords = Array.from(sentenceZone.children).map(wordCard => {
+        return wordCard.textContent.trim();
+      });
+      
+      // 获取当前关卡的正确单词顺序
+      const currentSentence = sentences[currentSentenceIndex];
+      const correctWords = currentSentence.words;
+      
+      // 检查单词数量是否一致
+      if (sentenceWords.length !== correctWords.length) {
+        // 单词数量不一致，显示错误
+        showResult(false, 0, 0);
+        return;
+      }
+      
+      // 检查单词顺序是否正确
+      let isCorrect = true;
+      for (let i = 0; i < sentenceWords.length; i++) {
+        if (sentenceWords[i] !== correctWords[i]) {
+          isCorrect = false;
+          break;
+        }
+      }
+      
+      // 如果句子正确
+      if (isCorrect) {
+        // 暂停游戏计时器
+        clearInterval(timerInterval);
+        
+        // 计算得分
+        const timeBonus = Math.max(0, timeLeft); // 剩余时间作为奖励
+        const levelPoints = currentLevel * 10; // 关卡基础分
+        const totalPoints = levelPoints + timeBonus;
+        
+        // 更新总得分
+        score += totalPoints;
+        scoreElement.textContent = score;
+        
+        // 显示结果模态框
+        showResult(true, totalPoints, timeBonus);
+      } else {
+        // 句子不正确，显示错误
+        showResult(false, 0, 0);
+      }
+    }
+    
+    // 事件监听器
+    document.addEventListener('DOMContentLoaded', () => {
+      // 初始化游戏
+      initGame();
+      
+      // 重置按钮点击事件
+      resetBtn.addEventListener('click', resetLevel);
+      
+      // 重新开始按钮点击事件
+      restartBtn.addEventListener('click', initGame);
+      restartBtnComplete.addEventListener('click', initGame);
+      
+      // 继续按钮点击事件
+      continueBtn.addEventListener('click', () => {
+        // 隐藏结果模态框
+        resultModal.classList.add('hidden');
+        
+        // 播放继续音效
+        playSound(gearClickSound);
+        
+        // 重新开始计时器
+        startTimer();
+      });
+      
+      // 音效开关点击事件
+      soundToggleBtn.addEventListener('click', toggleSound);
+      
+      // 为句子区域和单词库添加拖放事件
+      sentenceZone.addEventListener('dragover', handleDragOver);
+      sentenceZone.addEventListener('dragenter', handleDragEnter);
+      sentenceZone.addEventListener('dragleave', handleDragLeave);
+      sentenceZone.addEventListener('drop', handleDrop);
+      
+      wordBank.addEventListener('dragover', handleDragOver);
+      wordBank.addEventListener('dragenter', handleDragEnter);
+      wordBank.addEventListener('dragleave', handleDragLeave);
+      wordBank.addEventListener('drop', handleDrop);
+      
+      // 为窗口添加点击事件，用于取消调整模式
+      window.addEventListener('click', () => {
+        if (selectedWord) {
+          selectedWord.classList.remove('word-selected');
+          selectedWord = null;
+          isAdjusting = false;
+        }
+      });
+      
+      // 检查答案按钮点击事件
+      checkBtn.addEventListener('click', () => {
+        // 确保音频上下文已初始化
+        ensureAudioContext();
+        
+        // 播放检查音效
+        playSound(gearTurnSound);
+        
+        // 手动检查句子
+        manuallyCheckSentence();
+      });
+    });
+  </script>
+</body>
+</html>
